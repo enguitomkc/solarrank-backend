@@ -13,6 +13,13 @@ CREATE TABLE IF NOT EXISTS users (
     profile_image VARCHAR(255),
     role user_role DEFAULT 'user',
     total_energy INTEGER DEFAULT 0,
+    username VARCHAR(50) UNIQUE,
+    bio TEXT,
+    location VARCHAR(255),
+    company VARCHAR(255),
+    facebook VARCHAR(255),
+    phone VARCHAR(255),
+    rank VARCHAR(100),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -119,6 +126,8 @@ CREATE INDEX IF NOT EXISTS idx_votes_target ON votes(target_type, target_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_energy_log_user_id ON energy_log(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_tasks_user_id ON user_tasks(user_id);
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_rank ON users(rank);
 
 -- Create trigger to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
