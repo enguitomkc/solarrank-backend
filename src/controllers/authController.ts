@@ -1,132 +1,108 @@
 import { Response } from 'express';
 import { validationResult } from 'express-validator';
-import { UserService } from '../services/userService';
-import { generateToken } from '../utils/jwt';
-import { AuthRequest, RegisterRequest, LoginRequest, AuthResponse } from '../types/auth';
+import { AuthRequest, RegisterRequest, LoginRequest, RefreshTokenRequest } from '../types/auth';
+import { AuthService } from '../services/authService';
 
 export class AuthController {
   static async register(req: AuthRequest, res: Response): Promise<void> {
     try {
-      // Check for validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({
-          success: false,
-          message: 'Validation failed',
-          errors: errors.array()
-        });
-        return;
-      }
-
       const { name, email, password }: RegisterRequest = req.body;
 
-      // Create user
-      const user = await UserService.createUser(name, email, password);
+      // Delegate to service
+      const result = await AuthService.registerUser(name, email, password);
 
-      // Generate JWT token
-      const token = generateToken({
-        userId: user.id,
-        email: user.email,
-        role: user.role
+      // Return response
+      res.status(201).json({
+        user: result.user,
+        accessToken: result.tokens.accessToken,
+        refreshToken: result.tokens.refreshToken
       });
-
-      const response: AuthResponse = {
-        success: true,
-        message: 'User registered successfully',
-        user,
-        token
-      };
-
-      res.status(201).json(response);
+      return;
     } catch (error) {
-      console.error('Registration error:', error);
-      
-      const response: AuthResponse = {
-        success: false,
-        message: error instanceof Error ? error.message : 'Registration failed'
-      };
-
-      res.status(400).json(response);
+      res.status(400).json({ error: "Registration failed" });
+      return;
     }
   }
 
   static async login(req: AuthRequest, res: Response): Promise<void> {
     try {
-      // Check for validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({
-          success: false,
-          message: 'Validation failed',
-          errors: errors.array()
-        });
+      const { email, password }: LoginRequest = req.body;
+
+      // Delegate to service
+      const result = await AuthService.loginUser(email, password);
+
+      // Return response
+      res.status(200).json({
+        user: result.user,
+        accessToken: result.tokens.accessToken,
+        refreshToken: result.tokens.refreshToken
+      });
+      return;
+    } catch (error) {
+      res.status(400).json({ error: "Login failed" });
+      return;
+    }
+  }
+
+  static async refreshToken(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      // Parse inputs
+      const { refreshToken }: RefreshTokenRequest = req.body;
+
+      if (!refreshToken) {
+        res.status(400).json({ error: "Refresh token is required" });
+        // ResponseHelper.error(res, 'Refresh token is required');
         return;
       }
 
-      const { email, password }: LoginRequest = req.body;
+      // Delegate to service
+      const result = await AuthService.refreshUserToken(refreshToken);
 
-      // Authenticate user
-      const user = await UserService.authenticateUser(email, password);
-
-      // Generate JWT token
-      const token = generateToken({
-        userId: user.id,
-        email: user.email,
-        role: user.role
+      // Return response
+      res.status(200).json({
+        accessToken: result.accessToken,
       });
-
-      const response: AuthResponse = {
-        success: true,
-        message: 'Login successful',
-        user,
-        token
-      };
-
-      res.status(200).json(response);
+      return;
     } catch (error) {
-      console.error('Login error:', error);
-      
-      const response: AuthResponse = {
-        success: false,
-        message: error instanceof Error ? error.message : 'Login failed'
-      };
+      res.status(400).json({ error: "Token refresh failed" });
+      return;
+    }
+  }
 
-      res.status(401).json(response);
+  static async logout(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      // Parse inputs
+      const { refreshToken }: RefreshTokenRequest = req.body;
+
+      // Delegate to service
+      await AuthService.logoutUser(refreshToken);
+
+      // Return response
+      res.status(200).json({ message: "Logout successful" });
+      return;
+    } catch (error) {
+      res.status(400).json({ error: "Logout failed" });
+      return;
     }
   }
 
   static async verifyToken(req: AuthRequest, res: Response): Promise<void> {
     try {
-      if (!req.user) {
-        res.status(401).json({
-          success: false,
-          message: 'Invalid token'
-        });
+      // Parse inputs
+      if (!req.user?.userId) {
+        res.status(401).json({ error: "Invalid token" });
         return;
       }
 
-      const user = await UserService.getUserById(req.user.userId);
+      // Delegate to service
+      const user = await AuthService.verifyUser(req.user.userId);
 
-      if (!user) {
-        res.status(404).json({
-          success: false,
-          message: 'User not found'
-        });
-        return;
-      }
-
-      res.status(200).json({
-        success: true,
-        message: 'Token is valid',
-        user
-      });
+      // Return response
+      res.status(200).json({ user });
+      return;
     } catch (error) {
-      console.error('Token verification error:', error);
-      
-      res.status(500).json({
-        success: false,
-        message: 'Token verification failed'
-      });
+      res.status(400).json({ error: "Token verification failed" });
+      return;
     }
   }
 } 

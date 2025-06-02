@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import { verifyToken } from '../utils/jwt';
+import { verifyAccessToken, verifyToken } from '../utils/jwt';
 import { AuthRequest } from '../types/auth';
 
 export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction): void => {
@@ -15,7 +15,7 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
   }
 
   try {
-    const decoded = verifyToken(token);
+    const decoded = verifyAccessToken(token);
     req.user = decoded;
     next();
   } catch (error) {
@@ -53,7 +53,7 @@ export const optionalAuth = (req: AuthRequest, res: Response, next: NextFunction
 
   if (token) {
     try {
-      const decoded = verifyToken(token);
+      const decoded = verifyAccessToken(token);
       req.user = decoded;
     } catch (error) {
       // Token is invalid, but we continue without authentication

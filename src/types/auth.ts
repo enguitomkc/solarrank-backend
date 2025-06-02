@@ -1,6 +1,7 @@
 export interface User {
   id: string;
   name: string;
+  username: string;
   email: string;
   password_hash: string;
   profile_image?: string;
@@ -13,6 +14,7 @@ export interface User {
 export interface UserPublic {
   id: string;
   name: string;
+  username: string;
   email: string;
   profile_image?: string;
   role: 'user' | 'admin';
@@ -24,8 +26,18 @@ export interface JWTPayload {
   userId: string;
   email: string;
   role: 'user' | 'admin';
+  tokenType: 'access' | 'refresh';
   iat?: number;
   exp?: number;
+}
+
+export interface RefreshToken {
+  id: string;
+  userId: string;
+  token: string;
+  expires_at: Date;
+  created_at: Date;
+  is_revoked: boolean;
 }
 
 import { Request } from 'express';
@@ -49,5 +61,17 @@ export interface AuthResponse {
   success: boolean;
   message: string;
   user?: UserPublic;
-  token?: string;
+  accessToken?: string;
+  refreshToken?: string;
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string;
+}
+
+export interface RefreshTokenResponse {
+  success: boolean;
+  message: string;
+  accessToken?: string;
+  refreshToken?: string;
 } 
