@@ -8,8 +8,6 @@ const SALT_ROUNDS = 12;
 
 export class UserService {
   static async createUser(client: PoolClient, name: string, email: string, password: string): Promise<UserPublic> {
-    throw new Error('Not implemented');
-    
     try {
       // Check if user already exists
       const existingUser = await client.query(
