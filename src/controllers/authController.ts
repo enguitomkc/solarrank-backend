@@ -4,7 +4,7 @@ import { AuthRequest, RegisterRequest, LoginRequest, RefreshTokenRequest } from 
 import { AuthService } from '../services/authService';
 
 export class AuthController {
-  static async register(req: AuthRequest, res: Response): Promise<void> {
+  static async signup(req: AuthRequest, res: Response): Promise<void> {
     try {
       const { name, email, password }: RegisterRequest = req.body;
 
@@ -19,7 +19,7 @@ export class AuthController {
       });
       return;
     } catch (error) {
-      res.status(400).json({ error: "Registration failed" });
+      res.status(400).json({ error: (error as Error).message });
       return;
     }
   }
@@ -39,7 +39,8 @@ export class AuthController {
       });
       return;
     } catch (error) {
-      res.status(400).json({ error: "Login failed" });
+      console.log(error, "error") 
+      res.status(400).json({ error: (error as Error).message });
       return;
     }
   }
@@ -98,7 +99,7 @@ export class AuthController {
       const user = await AuthService.verifyUser(req.user.userId);
 
       // Return response
-      res.status(200).json({ user });
+      res.sendStatus(200)
       return;
     } catch (error) {
       res.status(400).json({ error: "Token verification failed" });

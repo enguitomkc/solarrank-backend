@@ -41,7 +41,7 @@ export class UserService {
     
     try {
       const result = await client.query(
-        'SELECT * FROM users WHERE email = $1',
+        'SELECT id, name, username, email, password_hash, profile_image, role, total_energy, created_at FROM users WHERE email = $1',
         [email]
       );
 

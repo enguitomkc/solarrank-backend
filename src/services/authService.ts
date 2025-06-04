@@ -69,11 +69,13 @@ export class AuthService {
     } finally {
       client.release();
     }
+  
+    console.log(user, "user");
 
     return { user, tokens: { accessToken: newAccessToken, refreshToken: newRefreshToken } };
   }
 
-  static async refreshUserToken(refreshToken: string): Promise<{ accessToken: string, refreshToken: string }> {
+  static async refreshUserToken(refreshToken: string): Promise<{ accessToken: string }> {
     // Verify token format and signature
     let decoded;
     try {
@@ -102,31 +104,8 @@ export class AuthService {
     };
 
     const newAccessToken = generateAccessToken(tokenPayload);
-    const newRefreshToken = generateRefreshToken(tokenPayload);
-
-    // Atomic transaction for token rotation
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-
-      // Store new refresh token with expiry
-      const refreshExpiresAt = new Date(
-        Date.now() + this.REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000
-      );
-      await RefreshTokenService.storeRefreshTokenWithClient(client, user.id, newRefreshToken, refreshExpiresAt);
-
-      // Revoke old refresh token
-      await RefreshTokenService.revokeRefreshTokenWithClient(client, refreshToken);
-
-      await client.query('COMMIT');
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw new Error('Failed to refresh token');
-    } finally {
-      client.release();
-    }
     
-    return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+    return { accessToken: newAccessToken };
   }
 
   static async logoutUser(refreshToken?: string): Promise<void> {

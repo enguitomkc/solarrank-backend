@@ -4,7 +4,7 @@ import { JWTPayload } from '../types/auth';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
 const REFRESH_SECRET = process.env.REFRESH_SECRET || 'your-super-secret-refresh-key-change-in-production';
 const ACCESS_TOKEN_EXPIRES_IN = process.env.ACCESS_TOKEN_EXPIRES_IN || '15m';
-const REFRESH_TOKEN_EXPIRES_IN = `${process.env.REFRESH_TOKEN_EXPIRES_IN}d` || '7d';
+const REFRESH_TOKEN_EXPIRES_IN = `${process.env.REFRESH_TOKEN_EXPIRES_IN_DAYS}d` || '7d';
 
 export const generateAccessToken = (payload: Omit<JWTPayload, 'iat' | 'exp' | 'tokenType'>): string => {
   const tokenPayload = { ...payload, tokenType: 'access' as const };

@@ -7,10 +7,10 @@ import { validateInputs } from '../middleware/validation';
 const router = Router();
 
 // Public routes
-router.post('/register', registerValidation, validateInputs, AuthController.register);
+router.post('/signup', registerValidation, validateInputs, AuthController.signup);
 router.post('/login', loginValidation, validateInputs, AuthController.login);
 router.post('/refresh', refreshTokenValidation, validateInputs, AuthController.refreshToken);
-router.post('/logout', refreshTokenValidation, validateInputs, authenticateToken, AuthController.logout);
+router.post('/logout', refreshTokenValidation, validateInputs, AuthController.logout);
 
 // Protected routes
 router.get('/verify', authenticateToken, AuthController.verifyToken);
