@@ -64,6 +64,18 @@ export class UserService {
     }
   }
 
+  static async getUsers(): Promise<UserPublic[]> {
+    const client = await pool.connect();
+
+    try {
+      const result = await client.query('SELECT id, name, username, email, profile_image, role, total_energy, created_at FROM users ORDER BY total_energy DESC');
+      console.log(result.rows, 'result.rows');
+      return result.rows;
+    } finally {
+      client.release();
+    }
+  }
+
   static async getUserById(id: string): Promise<UserPublic | null> {
     const client = await pool.connect();
     

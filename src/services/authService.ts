@@ -1,4 +1,4 @@
-import { UserService } from './userService';
+import { UserService } from './usersService';
 import { RefreshTokenService } from './refreshTokenService';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt';
 import { UserPublic } from '../types/auth';
