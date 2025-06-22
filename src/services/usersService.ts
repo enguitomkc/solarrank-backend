@@ -6,6 +6,11 @@ import { PoolClient } from 'pg';
 
 const SALT_ROUNDS = 12;
 
+// Leaderboard cache
+let cachedLeaderboard: UserPublic[] = [];
+let cacheTime: number | null = null;
+const CACHE_DURATION_SECONDS = 60; // 1 minute
+
 export class UserService {
   static async createUser(client: PoolClient, name: string, email: string, password: string): Promise<UserPublic> {
     try {
@@ -19,18 +24,25 @@ export class UserService {
         throw new Error('User with this email already exists');
       }
 
+      // Get current user count to determine the next rank
+      const userCountResult = await client.query('SELECT COUNT(*) as count FROM users');
+      const nextRank = parseInt(userCountResult.rows[0].count) + 1;
+
       // Hash password
       const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-      // Create user
+      // Create user with auto-generated rank
       const result = await client.query(
-        `INSERT INTO users (name, email, password_hash, role, total_energy, created_at, updated_at) 
-         VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) 
-         RETURNING id, name, username, email, profile_image, role, total_energy, created_at`,
-        [name, email, passwordHash, 'user', 0]
+        `INSERT INTO users (name, email, password_hash, role, total_energy, rank, created_at, updated_at) 
+        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW()) 
+        RETURNING id, name, email, profile_image, role, total_energy, rank, created_at`,
+        [name, email, passwordHash, 'user', 0, nextRank]
       );
 
       return result.rows[0];
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
     } finally {
       client.release();
     }
@@ -41,7 +53,7 @@ export class UserService {
     
     try {
       const result = await client.query(
-        'SELECT id, name, username, email, password_hash, profile_image, role, total_energy, created_at FROM users WHERE email = $1',
+        'SELECT id, name, email, password_hash, profile_image, role, total_energy, rank, created_at FROM users WHERE email = $1',
         [email]
       );
 
@@ -65,11 +77,24 @@ export class UserService {
   }
 
   static async getUsers(): Promise<UserPublic[]> {
+    const now = Date.now();
+    
+    // Check if we have valid cached data
+    if (cacheTime && now - cacheTime < CACHE_DURATION_SECONDS * 1000 && cachedLeaderboard.length > 0) {
+      console.log('Serving leaderboard from cache');
+      return cachedLeaderboard;
+    }
+
+    console.log('Fetching fresh leaderboard data from database');
     const client = await pool.connect();
 
     try {
-      const result = await client.query('SELECT id, name, username, email, profile_image, role, total_energy, created_at FROM users ORDER BY total_energy DESC');
-      console.log(result.rows, 'result.rows');
+      const result = await client.query('SELECT id, name, email, profile_image, role, total_energy, rank, created_at FROM users ORDER BY total_energy DESC');
+      
+      // Update cache
+      cachedLeaderboard = result.rows;
+      cacheTime = now;
+      
       return result.rows;
     } finally {
       client.release();
@@ -81,7 +106,7 @@ export class UserService {
     
     try {
       const result = await client.query(
-        'SELECT id, name, username, email, profile_image, role, total_energy, created_at FROM users WHERE id = $1',
+        'SELECT id, name, email, profile_image, role, total_energy, rank, created_at FROM users WHERE id = $1',
         [id]
       );
 
@@ -96,7 +121,7 @@ export class UserService {
 
     try {
       const result = await client.query(
-        'SELECT id, name, username, email, profile_image, role, total_energy, created_at FROM users WHERE username = $1',
+        'SELECT id, name, email, profile_image, role, total_energy, rank, created_at FROM users WHERE username = $1',
         [username]
       );
 
@@ -167,7 +192,7 @@ export class UserService {
 
       const result = await client.query(
         `UPDATE users SET ${setClause.join(', ')} WHERE id = $${paramCount} 
-        RETURNING id, name, email, profile_image, role, total_energy, created_at`,
+        RETURNING id, name, email, profile_image, role, total_energy, rank, created_at`,
         values
       );
 

@@ -7,6 +7,7 @@ export interface User {
   profile_image?: string;
   role: 'user' | 'admin';
   total_energy: number;
+  rank: number;
   created_at: Date;
   updated_at: Date;
 }
@@ -19,6 +20,7 @@ export interface UserPublic {
   profile_image?: string;
   role: 'user' | 'admin';
   total_energy: number;
+  rank: number;
   created_at: Date;
 }
 
